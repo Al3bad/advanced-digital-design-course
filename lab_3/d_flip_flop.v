@@ -5,7 +5,6 @@
 // Last updated : 30/3/2022
 
 module d_flip_flop (
-    // pins
     input                     CLK,
     input                     RST,
     input       [7:0]         PRELOAD,
@@ -15,9 +14,9 @@ module d_flip_flop (
 );
 
 //=============================================
-// ==> Behavioural implementation of the D-latch
+// ==> Behavioural implementation of the D-flip-flop
 //=============================================
-always @(posedge CLK or posedge RST) begin
+always @(posedge CLK, posedge RST) begin
   // Prelaod Q register on reset
   if (RST) begin
     Q = PRELOAD;

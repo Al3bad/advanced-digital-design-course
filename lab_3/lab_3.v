@@ -1,26 +1,32 @@
+// Lab 3
+
+// Author       : Abdullah Alabbad
+// Description  : Top-lvl design
+// Last updated : 07/4/2022
+
 module lab_3 (
   input   [2:0]   SW,
   output  [7:0]   LED
 );
 // wires connected to physical switches
 wire master_rst = SW[2];        // Connected to SW3 on the physical board
-wire data_rst = SW[1];          // Connected to SW1 on the physical board
-wire iCLK = SW[0];              // connected to SW0 on the physical board
+wire latch_rst = SW[1];         // Connected to SW1 on the physical board
+wire latch_set = SW[0];         // connected to SW0 on the physical board
 
 // wires
-wire CLK;                       // debounced clk
-wire [7:0] Q [7:0];             // internal wires for regesters files
+wire CLK;                       // latched clk signal
+wire [7:0] Q [7:0];             // internal wires for regester files
 
 // Output
 assign LED[7:0] = Q[7];
 
 
 //=============================================
-// ==> Clock driven by the input clk (SW0)
+// ==> Clock driven by the input switch (SW0-SW1)
 //=============================================
 sr_latch SR(
-  .R(data_rst),
-  .S(iCLK),
+  .R(latch_rst),
+  .S(latch_set),
   .Q(CLK)
 );
 
