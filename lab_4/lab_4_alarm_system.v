@@ -17,28 +17,37 @@ module lab_4_alarm_system (
 //   | DISARMED | ARMED/T | ------- | T (zone 3) | T (zone 2) | T (zone 1) | T (flashing) |     T      |
 //    -------------------------------------------------------------------------------------------------
 
+wire [4:0] current_state;
+
+parameter RESET              = 5'h0;
+parameter DISARMED           = 5'h1;
+parameter ARMED_PENDING      = 5'h2;
+parameter ARMED              = 5'h3;
+parameter TRIGGERED          = 5'h4;
+parameter TRIGGERED_RESET    = 5'h5;
+parameter CHECK_ZONE_1       = 5'h6;
+parameter CHECK_ZONE_2       = 5'h7;
+parameter CHECK_ZONE_3       = 5'h8;
+parameter ZONE_1_ON          = 5'h9;
+parameter ZONE_2_ON          = 5'ha;
+parameter ZONE_3_ON          = 5'hb;
+parameter ZONE_1_OFF         = 5'hc;
+parameter ZONE_2_OFF         = 5'hd;
+parameter ZONE_3_OFF         = 5'he;
+parameter DELAY              = 5'hf;
+parameter PANIC              = 5'h10;
+parameter PANIC_RESET        = 5'h11;
+parameter UPDATE             = 5'h12;
+
+
 //=============================================
 // ==> Wires / registers
 //=============================================
 
 wire SYS_RST;
-wire [2:0] zone_clk;
+wire KEY0;
+wire KEY1;
 wire [2:0] zone_sensor;
-
-wire CLK_10Hz;
-wire current_state;
-
-wire [2:0] zone_light;
-wire armed;
-wire triggered;
-wire disarmed;
-wire strobe_light;
-
-wire panic_key;
-wire panic_rst;
-wire arm_key;
-wire arm_rst;
-
 reg [7:0] LED_REG;
 
 //=============================================
@@ -48,40 +57,12 @@ reg [7:0] LED_REG;
 assign zone_sensor[0]   = SW[0];
 assign zone_sensor[1]   = SW[1];
 assign zone_sensor[2]   = SW[2];
-assign SYS_RST          = SW[3];
+assign SYS_RST          = ~SW[3];
+assign KEY0             = ~KEY[0];
+assign KEY1             = ~KEY[1];
 
 //=============================================
-// ==> SR latches for the keys
-//=============================================
-
-// sr_latch sr(
-//   .S(~KEY[0]),
-//   .R(SYS_RST | panic_rst),
-//   .Q(panic_key)
-// );
-//
-// sr_latch sr1(
-//   .S(~KEY[1]),
-//   .R(SYS_RST | arm_rst),
-//   .Q(arm_key)
-// );
-
-key_debounce kd1(
-  .iCLK(CLK_50MHz),
-  .iRST(SYS_RST),
-  .in(~KEY[0]),
-  .out(panic_key)
-);
-
-key_debounce kd2(
-  .iCLK(CLK_50MHz),
-  .iRST(SYS_RST),
-  .in(~KEY[1]),
-  .out(arm_key)
-);
-
-//=============================================
-// ==> Clock sources
+// ==> Clock sources (DONE)
 //=============================================
 
 // Generate a 3 kHz clk with a prescaler of 2^14
@@ -90,7 +71,7 @@ key_debounce kd2(
 wire CLK_3kHz;
 clk_src #(14 - 1'b1) clk0(
   .iCLK(CLK_50MHz),
-  .iRST(SYS_RST),
+  .iRST(1'b0),
   .start_at(13'h00),
   .out(CLK_3kHz)
 );
@@ -101,117 +82,174 @@ clk_src #(14 - 1'b1) clk0(
 // - Again, this values should be devided by 2 which gives 152
 // - So, we need at least 2^8 = 256 counter
 // - So, start counting from 256 - 152 = 102
-wire CLK_1ms;
-clk_src #(8) clk1(
+// wire CLK_100ms;
+// clk_src #(8) clk1(
+//   .iCLK(CLK_3kHz),
+//   .iRST(SYS_RST),
+//   .start_at(8'd102),
+//   .out(CLK_100ms)
+// );
+
+// Generate 20 Hz or 50 ms clk
+// - We need to figure out the number count required with 3 kHz clk
+// - 50 ms / 327.68 us = 152.58 counts
+// - Again, this values should be devided by 2 which gives 76
+// - So, we need at least 2^7 = 128 counter
+// - So, start counting from 128 - 76 = 52
+wire CLK_50ms;
+clk_src #(7) clk2(
   .iCLK(CLK_3kHz),
-  .iRST(SYS_RST),
-  .start_at(8'd102),
-  .out(CLK_100ms)
+  .iRST(1'b0),
+  .start_at(7'd52),
+  .out(CLK_50ms)
 );
 
-// 10 sec          = 100 ms * 100
-// 5 sec           = 100 ms * 50
+//=============================================
+// ==> SR latches for the keys (DONE)
+//=============================================
+
+wire panic_key;
+wire arm_key;
+
+key_debounce kd0(
+  .iCLK(CLK_50ms),
+  .iRST(SYS_RST),
+  .in(KEY0),
+  .out(panic_key)
+);
+
+key_debounce kd1(
+  .iCLK(CLK_50ms),
+  .iRST(SYS_RST),
+  .in(KEY1),
+  .out(arm_key)
+);
+
+//=============================================
+// ==> Strobe light
+//=============================================
+
 // 2.5 Hz = 400 ms = 100 ms * 4
-
-reg [2:0] x;
+// 2.5 Hz = 50 ms = 50 ms * 8
 reg [3:0] counter_400ms;
-reg [5:0] counter_5sec;
-reg [6:0] counter_10sec;
+reg strobe_light;
 
-
-always @(posedge CLK_100ms, posedge SYS_RST) begin
-  if (SYS_RST) begin
-    x = 0;
+always @(posedge CLK_50ms) begin
+  if (counter_400ms == 4'h04) begin
+    strobe_light = ~strobe_light;
     counter_400ms = 0;
-    counter_5sec = 0;
-    counter_10sec = 0;
   end
-  else begin
-    if (counter_400ms == 4'd2) begin
-      x[0] = ~x[0];
-      counter_400ms = 0;
-    end
-    if (counter_5sec == 6'd50) begin
-      x[1] = ~x[1];
-      counter_5sec = 0;
-    end
-    if (counter_10sec == 7'd100) begin
-      x[2] = ~x[2];
-      counter_10sec = 0;
-    end
-    counter_400ms = counter_400ms + 1'b1;
-    counter_5sec = counter_5sec + 1'b1;
-    counter_10sec = counter_10sec + 1'b1;
-  end
+  counter_400ms = counter_400ms + 1'b1;
 end
 
 //=============================================
 // ==> State machine
 //=============================================
 
-// state_machine fsm(
-//   .iCLK(CLK_10Hz),
-//   .RST(SYS_RST),
-//   .panic_key(panic_key),
-//   .arm_key(arm_key),
-//   .zone_sensor(),
-//   .state(current_state)
-// );
-//
-// parameter RESET         = 4'h0;
-// parameter DISAREMED     = 4'h1;
-// parameter ARMED_PENDING = 4'h2;
-// parameter ARMED         = 4'h3;
-// parameter PANIC         = 4'hf;
-//
-// always @(current_state) begin
-//   LED_REG[5] = 1'b0;
-//
-//   case (current_state)
-//     RESET: begin
-//       LED_REG = 8'b00000000;
-//     end
-//     DISAREMED: begin
-//       LED_REG[0] = 1'b0;
-//       LED_REG[1] = 1'b0;
-//       LED_REG[4:2] = zone_sensor[2:0];
-//       LED_REG[6] = 1'b0;
-//       LED_REG[7] = 1'b1;
-//     end
-//     ARMED_PENDING: begin
-//       LED_REG = 8'b10000000;
-//     end
-//     ARMED: begin
-//       LED_REG = 8'b01000000;
-//     end
-//     PANIC: begin
-//       LED_REG[0] = 1'b1;
-//       LED_REG[1] = strobe_light;
-//       LED_REG[7:2] = 6'b010000;
-//     end
-//     default: begin
-//       // default state
-//     end
-//   endcase
-//
-// end
+reg [2:0] zone_detected;
+reg strobe_light_en;
+reg siren_en;
+reg triggered_armed_en;
+reg disarmed_en;
+
+state_machine fsm(
+  .iCLK(CLK_50ms),
+  .iRST(SYS_RST),
+  .panic_key(panic_key),
+  .arm_key(arm_key),
+  .zone_sensor(zone_sensor),
+  .state(current_state)
+);
+
+always @(posedge CLK_3kHz) begin
+  case (current_state)
+    RESET: begin
+      strobe_light_en    <= 1'b0;
+      siren_en           <= 1'b0;
+      zone_detected      <= 3'b000;
+      triggered_armed_en <= 1'b0;
+      disarmed_en        <= 1'b0;
+    end
+    DISARMED: begin
+      strobe_light_en    <= 1'b0;
+      siren_en           <= 1'b0;
+      // zone_detected      = 3'b000;   // Controlled by ZONE_X_[ON|OFF] states
+      triggered_armed_en <= 1'b0;
+      disarmed_en        <= 1'b1;
+    end
+    ARMED_PENDING: begin
+      strobe_light_en    = 1'b0;
+      siren_en           = 1'b0;
+      zone_detected      = 3'b000;
+      triggered_armed_en = 1'b0;
+      disarmed_en        = 1'b1;
+    end
+    ARMED: begin
+      strobe_light_en    <= 1'b0;
+      siren_en           <= 1'b0;
+      zone_detected      = 3'b000;
+      triggered_armed_en <= 1'b1;
+      disarmed_en        <= 1'b0;
+    end
+    TRIGGERED: begin
+      strobe_light_en    <= 1'b1;
+      siren_en           <= 1'b1;
+      // zone_detected      = 3'b000;   // Controlled by ZONE_X_[ON|OFF] states
+      triggered_armed_en = 1'b1;
+      disarmed_en        = 1'b0;
+    end
+    // UPDATE: begin
+    //   zone_detected      = zone_sensor;
+    // end
+    ZONE_1_ON: begin
+      zone_detected[0] <= 1'b1;
+    end
+    ZONE_2_ON: begin
+      zone_detected[1] <= 1'b1;
+    end
+    ZONE_3_ON: begin
+      zone_detected[2] <= 1'b1;
+    end
+    ZONE_1_OFF: begin
+      zone_detected[0] <= 1'b0;
+    end
+    ZONE_2_OFF: begin
+      zone_detected[1] <= 1'b0;
+    end
+    ZONE_3_OFF: begin
+      zone_detected[2] <= 1'b0;
+    end
+    PANIC: begin
+      strobe_light_en    = 1'b1;
+      siren_en           = 1'b1;
+      // zone_detected      = 3'b000;   // Controlled by nothing
+      triggered_armed_en = 1'b1;
+      disarmed_en        = 1'b0;
+    end
+    default: begin
+      // default state
+    end
+  endcase
+
+end
 
 //=============================================
 // ==> Output connections
 //=============================================
 
-// assign LED[7:0] = LED_REG[7:0];
-//
-// assign LED[0] = triggered;
-// assign LED[1] = triggered? strobe_light : 1'b0;
-//
-// assign LED[2] = zone_light[0];
-// assign LED[3] = zone_light[1];
-// assign LED[4] = zone_light[2];
-//
+// assign LED[4:0] = current_state[4:0];
+
+assign LED[0] = siren_en;
+assign LED[1] = strobe_light_en? strobe_light : 1'b0;
+
+assign LED[2] = zone_detected[0];
+assign LED[3] = zone_detected[1];
+assign LED[4] = zone_detected[2];
+
 // assign LED[5] = 1'b0;
-//
-// assign LED[6] = armed | triggered;
-// assign LED[7] = disarmed;
+assign LED[5] = arm_key | panic_key;
+
+assign LED[6] = triggered_armed_en;
+assign LED[7] = disarmed_en;
 
 endmodule
