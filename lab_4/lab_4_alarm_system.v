@@ -21,23 +21,27 @@ wire [4:0] current_state;
 
 parameter RESET              = 5'h0;
 parameter DISARMED           = 5'h1;
+
 parameter ARMED_PENDING      = 5'h2;
 parameter ARMED              = 5'h3;
+
 parameter TRIGGERED          = 5'h4;
 parameter TRIGGERED_RESET    = 5'h5;
+
 parameter CHECK_ZONE_1       = 5'h6;
 parameter CHECK_ZONE_2       = 5'h7;
 parameter CHECK_ZONE_3       = 5'h8;
+
 parameter ZONE_1_ON          = 5'h9;
 parameter ZONE_2_ON          = 5'ha;
 parameter ZONE_3_ON          = 5'hb;
+
 parameter ZONE_1_OFF         = 5'hc;
 parameter ZONE_2_OFF         = 5'hd;
 parameter ZONE_3_OFF         = 5'he;
-parameter DELAY              = 5'hf;
+
 parameter PANIC              = 5'h10;
 parameter PANIC_RESET        = 5'h11;
-parameter UPDATE             = 5'h12;
 
 
 //=============================================
@@ -76,20 +80,6 @@ clk_src #(14 - 1'b1) clk0(
   .out(CLK_3kHz)
 );
 
-// Generate 10 Hz or 100 ms clk (50ms LOW, 50ms HIGH)
-// - We need to figure out the number count required with 3 kHz clk
-// - 100 ms / 327.68 us = 305 counts
-// - Again, this values should be devided by 2 which gives 152
-// - So, we need at least 2^8 = 256 counter
-// - So, start counting from 256 - 152 = 102
-// wire CLK_100ms;
-// clk_src #(8) clk1(
-//   .iCLK(CLK_3kHz),
-//   .iRST(SYS_RST),
-//   .start_at(8'd102),
-//   .out(CLK_100ms)
-// );
-
 // Generate 20 Hz or 50 ms clk
 // - We need to figure out the number count required with 3 kHz clk
 // - 50 ms / 327.68 us = 152.58 counts
@@ -105,7 +95,7 @@ clk_src #(7) clk2(
 );
 
 //=============================================
-// ==> SR latches for the keys (DONE)
+// ==> Debounce input keys (DONE)
 //=============================================
 
 wire panic_key;
@@ -129,17 +119,17 @@ key_debounce kd1(
 // ==> Strobe light
 //=============================================
 
-// 2.5 Hz = 400 ms = 100 ms * 4
+// 2.5 Hz = 400 ms (200 ms HIGH, 200 ms LOW)
 // 2.5 Hz = 50 ms = 50 ms * 8
-reg [3:0] counter_400ms;
+reg [3:0] counter_2_5_Hz;
 reg strobe_light;
 
 always @(posedge CLK_50ms) begin
-  if (counter_400ms == 4'h04) begin
+  if (counter_2_5_Hz == 4'h04) begin
     strobe_light = ~strobe_light;
-    counter_400ms = 0;
+    counter_2_5_Hz = 0;
   end
-  counter_400ms = counter_400ms + 1'b1;
+  counter_2_5_Hz = counter_2_5_Hz + 1'b1;
 end
 
 //=============================================
@@ -172,7 +162,6 @@ reg strobe_light_en;
 reg siren_en;
 reg triggered_armed_en;
 reg disarmed_en;
-reg latch_sw;
 
 state_machine fsm(
   .iCLK(CLK_50ms),
@@ -217,14 +206,10 @@ always @(posedge CLK_3kHz) begin
     TRIGGERED: begin
       strobe_light_en    <= 1'b1;
       siren_en           <= 1'b1;
-      // zone_detected      = 3'b000;   // Controlled by ZONE_X_[ON|OFF] states
       zone_detected[2:0] = zone_sensor_latched[2:0];
       triggered_armed_en = 1'b1;
       disarmed_en        = 1'b0;
     end
-    // UPDATE: begin
-    //   zone_detected      = zone_sensor;
-    // end
     ZONE_1_ON: begin
       zone_detected[0] <= 1'b1;
     end
@@ -261,8 +246,6 @@ end
 // ==> Output connections
 //=============================================
 
-// assign LED[4:0] = current_state[4:0];
-
 assign LED[0] = siren_en;
 assign LED[1] = strobe_light_en? strobe_light : 1'b0;
 
@@ -271,7 +254,6 @@ assign LED[3] = zone_detected[1];
 assign LED[4] = zone_detected[2];
 
 assign LED[5] = 1'b0;
-// assign LED[5] = arm_key | panic_key;
 
 assign LED[6] = triggered_armed_en;
 assign LED[7] = disarmed_en;
