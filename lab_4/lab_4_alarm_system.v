@@ -146,19 +146,20 @@ end
 // ==> SR latch for SW
 //=============================================
 wire [2:0] zone_sensor_latched;
+wire counter_10sec_expired_out;
 sr_latch srl0 (
   .S(zone_sensor[0]),
-  .R(arm_key | SYS_RST),
+  .R(arm_key | counter_10sec_expired_out | SYS_RST),
   .Q(zone_sensor_latched[0])
 );
 sr_latch srl1 (
   .S(zone_sensor[1]),
-  .R(arm_key | SYS_RST),
+  .R(arm_key | counter_10sec_expired_out | SYS_RST),
   .Q(zone_sensor_latched[1])
 );
 sr_latch srl2 (
   .S(zone_sensor[2]),
-  .R(arm_key | SYS_RST),
+  .R(arm_key | counter_10sec_expired_out | SYS_RST),
   .Q(zone_sensor_latched[2])
 );
 
@@ -179,6 +180,7 @@ state_machine fsm(
   .panic_key(panic_key),
   .arm_key(arm_key),
   .zone_sensor(zone_sensor),
+  .counter_10sec_expired_out(counter_10sec_expired_out),
   .state(current_state)
 );
 
@@ -268,8 +270,8 @@ assign LED[2] = zone_detected[0];
 assign LED[3] = zone_detected[1];
 assign LED[4] = zone_detected[2];
 
-// assign LED[5] = 1'b0;
-assign LED[5] = arm_key | panic_key;
+assign LED[5] = 1'b0;
+// assign LED[5] = arm_key | panic_key;
 
 assign LED[6] = triggered_armed_en;
 assign LED[7] = disarmed_en;

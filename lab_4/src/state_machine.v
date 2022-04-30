@@ -4,6 +4,7 @@ module state_machine (
   input panic_key,
   input arm_key,
   input [2:0] zone_sensor,
+  output reg counter_10sec_expired_out,
   output [4:0] state
 );
 
@@ -156,12 +157,17 @@ always @(
         end
       end
       TRIGGERED_RESET: begin
-        if (panic_key)
+          counter_10sec_expired_out = 1'b1;
+        if (panic_key) begin
+          counter_10sec_expired_out = 1'b0;
           next_state = PANIC;
+        end
         else if (counter_10sec_expired && (zone_sensor == 3'b000)) begin
+          counter_10sec_expired_out = 1'b0;
           next_state = ARMED;
         end
         else if (counter_10sec_expired && (zone_sensor > 3'b000)) begin
+          counter_10sec_expired_out = 1'b0;
           next_state = TRIGGERED;
         end
         else if (arm_key)
