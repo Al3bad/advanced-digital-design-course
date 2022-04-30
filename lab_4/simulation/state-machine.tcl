@@ -45,9 +45,15 @@ proc runSim {} {
   force -freeze  iRST        0
 
   # Start simulation
-  run 1000ms
+  run 2000ms
 
-  testPanic
+  force -freeze  iRST        1
+  run 200ms
+  force -freeze  iRST        0
+
+
+  # testPanic
+  testTriggered
 
  #  # 1.1 DISARMED to ARMED
  # pressArmKey
@@ -162,4 +168,17 @@ proc testPanic {} {
   # Not the system should be in ARMED state
 
 
+}
+
+proc testTriggered {} {
+  run 2000ms
+
+  pressArmKey
+  run 200ms
+
+  detectZone1
+
+
+  run 2000ms
+  run 2000ms
 }

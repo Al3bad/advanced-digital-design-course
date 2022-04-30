@@ -143,6 +143,26 @@ always @(posedge CLK_50ms) begin
 end
 
 //=============================================
+// ==> SR latch for SW
+//=============================================
+wire [2:0] zone_sensor_latched;
+sr_latch srl0 (
+  .S(zone_sensor[0]),
+  .R(arm_key | SYS_RST),
+  .Q(zone_sensor_latched[0])
+);
+sr_latch srl1 (
+  .S(zone_sensor[1]),
+  .R(arm_key | SYS_RST),
+  .Q(zone_sensor_latched[1])
+);
+sr_latch srl2 (
+  .S(zone_sensor[2]),
+  .R(arm_key | SYS_RST),
+  .Q(zone_sensor_latched[2])
+);
+
+//=============================================
 // ==> State machine
 //=============================================
 
@@ -151,6 +171,7 @@ reg strobe_light_en;
 reg siren_en;
 reg triggered_armed_en;
 reg disarmed_en;
+reg latch_sw;
 
 state_machine fsm(
   .iCLK(CLK_50ms),
@@ -187,7 +208,7 @@ always @(posedge CLK_3kHz) begin
     ARMED: begin
       strobe_light_en    <= 1'b0;
       siren_en           <= 1'b0;
-      zone_detected      = 3'b000;
+      // zone_detected      = 3'b000;
       triggered_armed_en <= 1'b1;
       disarmed_en        <= 1'b0;
     end
@@ -195,6 +216,7 @@ always @(posedge CLK_3kHz) begin
       strobe_light_en    <= 1'b1;
       siren_en           <= 1'b1;
       // zone_detected      = 3'b000;   // Controlled by ZONE_X_[ON|OFF] states
+      zone_detected[2:0] = zone_sensor_latched[2:0];
       triggered_armed_en = 1'b1;
       disarmed_en        = 1'b0;
     end

@@ -145,7 +145,7 @@ always @(
         end
       end
       TRIGGERED: begin
-        from_disarmed = 1'b0;
+        // from_disarmed = 1'b0;
         if (panic_key) begin
           counter_10sec_en = 1'b1;
           next_state = PANIC;
@@ -154,7 +154,7 @@ always @(
           next_state = DISARMED;
         else begin
           counter_10sec_en = 1'b1;
-          next_state = CHECK_ZONE_1;
+          next_state = TRIGGERED_RESET;
         end
       end
       TRIGGERED_RESET: begin
