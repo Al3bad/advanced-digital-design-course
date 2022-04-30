@@ -12,23 +12,27 @@ module state_machine (
 //=============================================
 parameter RESET              = 5'h0;
 parameter DISARMED           = 5'h1;
+
 parameter ARMED_PENDING      = 5'h2;
 parameter ARMED              = 5'h3;
+
 parameter TRIGGERED          = 5'h4;
 parameter TRIGGERED_RESET    = 5'h5;
+
 parameter CHECK_ZONE_1       = 5'h6;
 parameter CHECK_ZONE_2       = 5'h7;
 parameter CHECK_ZONE_3       = 5'h8;
+
 parameter ZONE_1_ON          = 5'h9;
 parameter ZONE_2_ON          = 5'ha;
 parameter ZONE_3_ON          = 5'hb;
+
 parameter ZONE_1_OFF         = 5'hc;
 parameter ZONE_2_OFF         = 5'hd;
 parameter ZONE_3_OFF         = 5'he;
-parameter DELAY              = 5'hf;
+
 parameter PANIC              = 5'h10;
 parameter PANIC_RESET        = 5'h11;
-parameter UPDATE             = 5'h12;
 
 //=============================================
 // ==> Wires / registers
@@ -36,7 +40,6 @@ parameter UPDATE             = 5'h12;
 
 reg [4:0] current_state;
 reg [4:0] next_state;
-reg from_disarmed;
 
 reg counter_5sec_en;
 wire counter_5sec_expired;
@@ -47,15 +50,15 @@ wire counter_10sec_expired;
 reg [6:0] counter_5sec;
 reg [7:0] counter_10sec;
 
+//=============================================
+// Counters (input clock cycle == 50 ms)
+//=============================================
+
+// 10 sec          = 50 ms * 200
+// 5 sec           = 50 ms * 100
+
 assign counter_5sec_expired = (counter_5sec == 7'd100)? 1'b1: 1'b0;
 assign counter_10sec_expired = (counter_10sec == 8'd200)? 1'b1: 1'b0;
-
-//=============================================
-// Counters (input clock cycle == 100 ms)
-//=============================================
-
-// 10 sec          = 100 ms * 100
-// 5 sec           = 100 ms * 50
 
 always @(posedge iCLK) begin
   // If the counter is enabled, count up
@@ -91,18 +94,15 @@ end
 //=============================================
 always @(
          posedge iCLK,
-         // current_state,
          posedge iRST,
          posedge panic_key,
          posedge arm_key,
          posedge counter_5sec_expired,
          posedge counter_10sec_expired
-         // zone_sensor,
        ) begin
   if (iRST) begin
     next_state = RESET;
     counter_5sec_en = 1'b0;
-    from_disarmed = 1'b0;
   end
   else
     case (current_state)
@@ -112,7 +112,6 @@ always @(
         next_state = DISARMED;
       end
       DISARMED: begin
-        from_disarmed = 1'b1;
         if (panic_key) begin
           next_state = PANIC;
         end
@@ -145,7 +144,6 @@ always @(
         end
       end
       TRIGGERED: begin
-        // from_disarmed = 1'b0;
         if (panic_key) begin
           counter_10sec_en = 1'b1;
           next_state = PANIC;
@@ -166,6 +164,8 @@ always @(
         else if (counter_10sec_expired && (zone_sensor > 3'b000)) begin
           next_state = TRIGGERED;
         end
+        else if (arm_key)
+          next_state = DISARMED;
         else if (!counter_10sec_en)
           counter_10sec_en = 1'b1;
       end
@@ -271,10 +271,8 @@ always @(
         else if (arm_key) begin
           next_state = ARMED_PENDING;
         end
-        else if (from_disarmed)
-          next_state = DISARMED;
         else
-          next_state = TRIGGERED;
+          next_state = DISARMED;
       end
       ZONE_3_OFF: begin
         if (panic_key) begin
@@ -283,10 +281,8 @@ always @(
         else if (arm_key) begin
           next_state = ARMED_PENDING;
         end
-        else if (from_disarmed)
-          next_state = DISARMED;
         else
-          next_state = TRIGGERED;
+          next_state = DISARMED;
       end
       //=========================================
       default: begin
