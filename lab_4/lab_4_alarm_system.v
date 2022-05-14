@@ -69,9 +69,8 @@ assign KEY1             = ~KEY[1];
 // ==> Clock sources (DONE)
 //=============================================
 
-// Generate a 3 kHz clk with a prescaler of 2^14
-// - 50MHz / 2^14 ==>     327.68 us for half cycle
-// - So, 500Hz / 2^13 ==> 327.68 us for full cycle
+// Generate a 3 kHz clk with a prescaler of (2^13 * 2)
+// - 50MHz / (2^13*2) ==> 3.05 kHz = 327.68 us
 wire CLK_3kHz;
 clk_src #(14 - 1'b1) clk0(
   .iCLK(CLK_50MHz),
@@ -83,7 +82,7 @@ clk_src #(14 - 1'b1) clk0(
 // Generate 20 Hz or 50 ms clk
 // - We need to figure out the number count required with 3 kHz clk
 // - 50 ms / 327.68 us = 152.58 counts
-// - Again, this values should be devided by 2 which gives 76
+// - This values should be devided by 2 which gives 76
 // - So, we need at least 2^7 = 128 counter
 // - So, start counting from 128 - 76 = 52
 wire CLK_50ms;

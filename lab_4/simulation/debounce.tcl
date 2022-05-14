@@ -10,68 +10,88 @@ proc runSim {} {
   add wave *
   property wave -radix hex *
   
-  force -freeze  iRST   1
+
+  #=============================================
+  # ==> Init
+  #=============================================
+  force -deposit iCLK 1 0, 0 {25ms} -repeat 50ms
+  force -freeze  iRST   0
   force -freeze  in     0
-
-  force -deposit iCLK 1 0, 0 {50ms} -repeat 100ms
   
+  #=============================================
+  # ==> Reset
+  #=============================================
+  force -freeze  iRST   1
   run 100ms
-
   force -freeze  iRST   0
   run 100ms
-
-  # First press - normal
-  force -freeze  in     1
-  #==== bounce effect ====
-  bounceEffect 1
-  #======================
-  run 10ms
-  force -freeze  in     0
-  #==== bounce effect ====
-  bounceEffect 0
-  #======================
-  run 2000ms
   
-  # Second press - long
-  force -freeze  in     1
-  #==== bounce effect ====
-  bounceEffect 1
-  #======================
-  run 1000ms
-  force -freeze  in     0
-  #==== bounce effect ====
-  bounceEffect 0
-  #======================
-  run 100ms
-  run 100ms
-  run 100ms
-  run 100ms
+  #=============================================
+  # ==> Start simulation
+  #=============================================
+  normalPress
 
-  # Third press - short
-  force -freeze  in     1
-  #==== bounce effect ====
-  bounceEffect 1
-  #======================
-  run 100ms
-  force -freeze  in     0
-  #==== bounce effect ====
-  bounceEffect 0
-  #======================
-  run 1000ms
-
+  shortPress
+  
+  longPress
 
   wave zoom full
 }
 
 
-proc bounceEffect {hight} {
-  run 10ms
+proc normalPress {} {
+  run 100ms
+  # First press - normal
   force -freeze  in     1
-  run 10ms
+  #==== bounce effect ====
+  bounceEffect 1
+  #======================
+  run 100ms
   force -freeze  in     0
-  run 20ms
+  #==== bounce effect ====
+  bounceEffect 0
+  bounceEffect 0
+  #======================
+  run 300ms
+}
+
+proc shortPress {} {
+  # Third press - short
   force -freeze  in     1
-  run 10ms
+  #==== bounce effect ====
+  bounceEffect 1
+  #======================
+  run 50ms
+  force -freeze  in     0
+  #==== bounce effect ====
+  bounceEffect 0
+  #======================
+  run 300ms
+}
+
+proc longPress {} {
+  # Second press - lonVg
+  force -freeze  in     1
+  #==== bounce effect ====
+  bounceEffect 1
+  #======================
+  run 1000ms
+  force -freeze  in     0
+  #==== bounce effect ====
+  bounceEffect 0
+  #======================
+  run 300ms
+
+}
+
+proc bounceEffect {hight} {
+  run 1ms
+  force -freeze  in     1
+  run 1ms
+  force -freeze  in     0
+  run 2ms
+  force -freeze  in     1
+  run 1ms
   force -freeze  in     0
   run 5ms
 
@@ -80,3 +100,4 @@ proc bounceEffect {hight} {
     force -freeze  in     1
   }
 }
+

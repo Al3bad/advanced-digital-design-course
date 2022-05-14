@@ -11,28 +11,35 @@ proc runSim {} {
 
   # parameter RESET              = 5'h0;
   # parameter DISARMED           = 5'h1;
+  #
   # parameter ARMED_PENDING      = 5'h2;
   # parameter ARMED              = 5'h3;
+  #
   # parameter TRIGGERED          = 5'h4;
   # parameter TRIGGERED_RESET    = 5'h5;
+  #
   # parameter CHECK_ZONE_1       = 5'h6;
   # parameter CHECK_ZONE_2       = 5'h7;
   # parameter CHECK_ZONE_3       = 5'h8;
+  #
   # parameter ZONE_1_ON          = 5'h9;
   # parameter ZONE_2_ON          = 5'ha;
   # parameter ZONE_3_ON          = 5'hb;
+  #
   # parameter ZONE_1_OFF         = 5'hc;
   # parameter ZONE_2_OFF         = 5'hd;
   # parameter ZONE_3_OFF         = 5'he;
-  # parameter DELAY              = 5'hf;
+  #
   # parameter PANIC              = 5'h10;
   # parameter PANIC_RESET        = 5'h11;
-  # parameter UPDATE             = 5'h12;
 
   add wave *
   property wave -radix hex *
   
-  # reset state
+  #=============================================
+  # ==> Init
+  #=============================================
+  force -deposit iCLK 1 0, 0 {25ms} -repeat 50ms
   force -freeze  iRST        1
   force -freeze  panic_key   0
   force -freeze  arm_key     0
@@ -40,7 +47,9 @@ proc runSim {} {
   run 200ms
 
 
-  force -deposit iCLK 1 0, 0 {25ms} -repeat 50ms
+  #=============================================
+  # ==> Reset
+  #=============================================
   run 200ms
   force -freeze  iRST        0
 
