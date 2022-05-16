@@ -25,12 +25,13 @@ parameter CTR_WIDTH_PX    = 4'd4;       // Counter width
 parameter CTR_PRELOAD_PX  = 4'd14;      // Preload value
 
 // I2C counter config
-// For 2.5 kHz clock:
-//    counter width  = 15-bits
-//    preload value  = 2^15 - (20000/2) = 22768
+// For 10 kHz clock:
+//    counter width  = 12-bits
+//    num of counts  = 20ns * X = 50us ==> 2500 counts
+//    preload value  = 2^15 - 2500 = 1596
 parameter CTR_IDX_I2C     = 1'b1;       // WARN: DO NOT TOUCH THIS
-parameter CTR_WIDTH_I2C   = 5'd15;      // Counter width
-parameter CTR_PRELOAD_I2C = 15'd22768;   // Preload value
+parameter CTR_WIDTH_I2C   = 5'd12;      // Counter width
+parameter CTR_PRELOAD_I2C = 15'd1596;   // Preload value
 
 
 //=============================================
