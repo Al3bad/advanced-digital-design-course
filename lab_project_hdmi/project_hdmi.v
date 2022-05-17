@@ -44,9 +44,9 @@ assign HDMI_I2S0 = 1'b0;
 assign HDMI_MCLK = 1'b0;
 assign HDMI_SCLK = 1'b0;
 
-assign GPIO_1[0] = CLK_I2C? 1'b1 : 1'b0;
-assign GPIO_1[1] = I2C_SCL? 1'b1 : 1'b0;
-assign GPIO_1[2] = I2C_SDA? 1'b1 : 1'b0;
+assign GPIO_1[0] = HDMI_TX_DE? 1'b1 : 1'b0;
+assign GPIO_1[1] = HDMI_TX_HS? 1'b1 : 1'b0;
+assign GPIO_1[2] = HDMI_TX_VS? 1'b1 : 1'b0;
 
 assign LED[0] = KEY[0];
 
@@ -62,7 +62,7 @@ clk_src clk_src(
 );
 
 //=============================================
-// ==> TODO: Configure HDMI via I2C
+// ==> Configure HDMI via I2C
 //=============================================
 
 // The data should contain "slave address" + "memory address" + "data"
@@ -77,17 +77,17 @@ HDMI_I2C_controller i2c(
 // ==> TODO: Display the img
 //=============================================
 
-// HDMI_controller ig (
-//   .CLK_PX(CLK_PX),
-//   .RST_n(RST_n),
-//   .HDMI_CLK(HDMI_TX_CLK),
-//   .DE(HDMI_TX_DE),
-//   .HSYNC(HDMI_TX_HS),
-//   .VSYNC(HDMI_TX_VS),
-//   .RED(HDMI_TX_DATA[24:16]),
-//   .GREEN(HDMI_TX_DATA[15:8]),
-//   .BLUE(HDMI_TX_DATA[7:0])
-// );
+HDMI_controller ig (
+  .CLK_PX(CLK_PX),
+  .RST_n(RST_n),
+  .HDMI_CLK(HDMI_TX_CLK),
+  .DE(HDMI_TX_DE),
+  .HSYNC(HDMI_TX_HS),
+  .VSYNC(HDMI_TX_VS),
+  .RED(HDMI_TX_D[23:16]),
+  .GREEN(HDMI_TX_D[15:8]),
+  .BLUE(HDMI_TX_D[7:0])
+);
 
 endmodule
 
