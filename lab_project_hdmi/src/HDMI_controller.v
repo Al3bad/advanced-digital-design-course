@@ -1,13 +1,15 @@
 module HDMI_controller (
-  input  CLK_PX,
-  input  RST_n,
-  output HDMI_CLK,
-  output  DE,
-  output  HSYNC,
-  output  VSYNC,
-  output reg [7:0] RED,
-  output reg [7:0] GREEN,
-  output reg [7:0] BLUE
+  input             CLK_PX,
+  input             RST_n,
+  input      [23:0] PX,
+  output reg [16:0] PX_ADDR,
+  output            HDMI_CLK,
+  output            DE,
+  output            HSYNC,
+  output            VSYNC,
+  output reg [7:0]  RED,
+  output reg [7:0]  GREEN,
+  output reg [7:0]  BLUE
 );
 
 assign HDMI_CLK = CLK_PX;
@@ -31,23 +33,27 @@ parameter V_FRONT_PARCH = 5'd10;
 parameter V_SYNC_WIDTH  = 7'd2;
 parameter V_TOTAL_PX    = V_BACK_PARCH + V_ACTIVE_AREA + V_FRONT_PARCH + V_SYNC_WIDTH;
 
+parameter IMG_X = 185;
+parameter IMG_Y = 185;
+
 //=============================================
 // ==> Wires / registers
 //=============================================
 
-reg [9:0] x_counter;
-reg [9:0] y_counter;
+reg [9:0] counter_x;
+reg [9:0] counter_y;
 
-wire h_end_reached;
-wire y_end_reached;
+wire end_reached_h;
+wire end_reached_v;
 wire active;
 
-assign h_end_reached = (x_counter == H_TOTAL_PX - 1);
-assign y_end_reached = (y_counter == V_TOTAL_PX - 1);
-assign active = (x_counter > H_BACK_PARCH && x_counter < (H_BACK_PARCH + H_ACTIVE_AREA)) && (y_counter > V_BACK_PARCH && y_counter < (V_BACK_PARCH + V_ACTIVE_AREA));
-assign HSYNC = !(x_counter > H_BACK_PARCH + H_ACTIVE_AREA + H_FRONT_PARCH);
-assign VSYNC = !(y_counter == V_TOTAL_PX - 1 || y_counter == V_TOTAL_PX - 2);
+assign end_reached_h = (counter_x == H_TOTAL_PX - 1);
+assign end_reached_v = (counter_y == V_TOTAL_PX - 1);
+assign active = (counter_x > H_BACK_PARCH && counter_x < (H_BACK_PARCH + H_ACTIVE_AREA)) && (counter_y > V_BACK_PARCH && counter_y < (V_BACK_PARCH + V_ACTIVE_AREA));
+assign HSYNC = !(counter_x > H_BACK_PARCH + H_ACTIVE_AREA + H_FRONT_PARCH);
+assign VSYNC = !(counter_y == V_TOTAL_PX - 1 || counter_y == V_TOTAL_PX - 2);
 assign DE = active;
+
 
 //=============================================
 // ==> Horizontal pixels
@@ -57,14 +63,14 @@ assign DE = active;
 always @(posedge CLK_PX, negedge RST_n) begin
   if (!RST_n) begin
     // reset
-    x_counter <= 0;
+    counter_x <= 0;
   end
   else begin
     // logic
-    if (h_end_reached)
-      x_counter <= 0;
+    if (end_reached_h)
+      counter_x <= 0;
     else
-      x_counter <= x_counter + 1;
+      counter_x <= counter_x + 1'b1;
   end
 end
 
@@ -74,15 +80,15 @@ end
 always @(posedge CLK_PX, negedge RST_n) begin
   if (!RST_n) begin
     // reset
-    y_counter <= 0;
+    counter_y <= 0;
   end
   else begin
     // logic
-    if (h_end_reached) begin
-      if (y_end_reached)
-        y_counter <= 0;
+    if (end_reached_h) begin
+      if (end_reached_v)
+        counter_y <= 0;
       else
-        y_counter <= y_counter + 1;
+        counter_y <= counter_y + 1'b1;
       end
   end
 end
@@ -96,13 +102,30 @@ always @(posedge CLK_PX, negedge RST_n) begin
     RED <= 0;
     GREEN <= 0;
     BLUE <= 0;
+    PX_ADDR <= 0;
   end
   else begin
     // logic
     if (active) begin
-      {RED, GREEN, BLUE} <= {RED + 1'b1, GREEN + 1'b1, BLUE + 1'b1};
+      // Draw gradient (black-white)
+      // {RED, GREEN, BLUE} <= {RED + 1'b1, GREEN + 1'b1, BLUE + 1'b1};
+
+      if (counter_y > IMG_Y + V_BACK_PARCH) begin
+        // reset addr when the last row of the image is reached
+        PX_ADDR <= 0;
+      end
+      else if (counter_x > IMG_X + H_BACK_PARCH)
+        // black px when drawing outside the img
+        {RED, GREEN, BLUE} <= {8'h0, 8'h0, 8'h0};
+      // Draw img on the top-left corner
+      else if (counter_x <= IMG_X + H_BACK_PARCH && counter_y <= IMG_Y + V_BACK_PARCH) begin
+        {RED, GREEN, BLUE} <= {PX[23:16], PX[15:8], PX[7:0]};
+        PX_ADDR <= PX_ADDR + 1'b1;
+      end
+
     end
     else begin
+      // black px when not in active area
       {RED, GREEN, BLUE} <= {8'h00, 8'h00, 8'h00};
     end
   end

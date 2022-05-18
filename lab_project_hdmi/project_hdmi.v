@@ -74,12 +74,30 @@ HDMI_I2C_controller i2c(
 );
 
 //=============================================
-// ==> TODO: Display the img
+// ==> IMG ROM
+//=============================================
+wire [16:0] PX_ADDR;
+wire [23:0] PX;
+
+IMG_MEM rom(
+  .clock(CLK_50MHz),
+  .address(PX_ADDR),
+  .q(PX)
+);
+
+wire [7:0] RED = PX[23:0];
+wire [7:0] GREEN = PX[15:8];
+wire [7:0] BLUE = PX[7:0];
+
+//=============================================
+// ==> Display the img
 //=============================================
 
 HDMI_controller ig (
   .CLK_PX(CLK_PX),
   .RST_n(RST_n),
+  .PX(PX),
+  .PX_ADDR(PX_ADDR),
   .HDMI_CLK(HDMI_TX_CLK),
   .DE(HDMI_TX_DE),
   .HSYNC(HDMI_TX_HS),

@@ -39,7 +39,7 @@ assign I2C_SDA = (!RST_n)? 1'b1 : (SDA)? 1'bz : SDA;
 assign I2C_SCL = SCL;
 
 //=============================================
-// ==> HDMI config
+// ==> ROM containing ADV7513 config
 //=============================================
 
 // Refernce: ADV7513 programming guide - Quick start guide - page 14
@@ -48,7 +48,7 @@ assign I2C_SCL = SCL;
 //    - RGB colour space
 //    - 4:4:4 video format
 
-//                             reg    WR  payload   WR
+//                             reg   ACK  payload  ACK
 assign HDMI_CONFIG_MEM[0]  = {8'h15, 1'b1, 8'h20, 1'b1};
 assign HDMI_CONFIG_MEM[1]  = {8'h16, 1'b1, 8'h30, 1'b1};
 assign HDMI_CONFIG_MEM[2]  = {8'h17, 1'b1, 8'h00, 1'b1};
