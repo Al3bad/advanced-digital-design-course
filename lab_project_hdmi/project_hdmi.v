@@ -33,8 +33,13 @@ module project_hdmi (
 // ==> Wires / registers
 //=============================================
 wire RST_n = KEY[0];
+wire px_invert = SW[0];
 wire CLK_PX;
 wire CLK_I2C;
+
+wire [7:0] RED;
+wire [7:0] GREEN;
+wire [7:0] BLUE;
 
 //=============================================
 // ==> Connection
@@ -43,6 +48,7 @@ wire CLK_I2C;
 assign HDMI_I2S0 = 1'b0;
 assign HDMI_MCLK = 1'b0;
 assign HDMI_SCLK = 1'b0;
+assign HDMI_TX_D = {RED, GREEN, BLUE};
 
 assign GPIO_1[0] = HDMI_TX_DE? 1'b1 : 1'b0;
 assign GPIO_1[1] = HDMI_TX_HS? 1'b1 : 1'b0;
@@ -76,18 +82,16 @@ HDMI_I2C_controller i2c(
 //=============================================
 // ==> IMG ROM
 //=============================================
-wire [16:0] PX_ADDR;
+// Notes:
+//    - Memory size should be limited to (2^17) × 3 = 393216 becouse of hardware limitation
+wire [18:0] PX_ADDR;
 wire [23:0] PX;
 
-IMG_MEM rom(
+IMG_MEM_BW rom(
   .clock(CLK_50MHz),
   .address(PX_ADDR),
-  .q(PX)
+  .q(PX[7:0])
 );
-
-wire [7:0] RED = PX[23:0];
-wire [7:0] GREEN = PX[15:8];
-wire [7:0] BLUE = PX[7:0];
 
 //=============================================
 // ==> Display the img
@@ -102,9 +106,10 @@ HDMI_controller ig (
   .DE(HDMI_TX_DE),
   .HSYNC(HDMI_TX_HS),
   .VSYNC(HDMI_TX_VS),
-  .RED(HDMI_TX_D[23:16]),
-  .GREEN(HDMI_TX_D[15:8]),
-  .BLUE(HDMI_TX_D[7:0])
+  .RED(RED),
+  .GREEN(GREEN),
+  .BLUE(BLUE),
+  .INV(px_invert)
 );
 
 endmodule
