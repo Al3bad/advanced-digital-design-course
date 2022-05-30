@@ -14,19 +14,12 @@ module clk_src (
 // ==> Parameters
 //=============================================
 // PX counter config
-// For 25MHz clock:
-//    counter width  = 4-bits
-//    preload value  = 14
-parameter CTR_WIDTH_PX    = 4'd4;       // Counter width
-parameter CTR_PRELOAD_PX  = 4'd14;      // Preload value
+parameter CTR_WIDTH_PX    = 1'd1;       // Counter width
+parameter CTR_PRELOAD_PX  = 1'd0;       // Preload value
 
 // I2C counter config
-// For 10 kHz clock:
-//    counter width  = 12-bits
-//    num of counts  = 20ns * X = 50us ==> 2500 counts
-//    preload value  = 2^12 - 2500 = 1596
-parameter CTR_WIDTH_I2C   = 5'd12;      // Counter width
-parameter CTR_PRELOAD_I2C = 15'd1596;   // Preload value
+parameter CTR_WIDTH_I2C   = 4'd9;      // Counter width
+parameter CTR_PRELOAD_I2C = 9'd12;     // Preload value
 
 //=============================================
 // ==> Counters

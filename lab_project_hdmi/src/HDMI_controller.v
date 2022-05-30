@@ -48,8 +48,8 @@ wire end_reached_h;
 wire end_reached_v;
 wire active;
 
-assign end_reached_h = (counter_x == H_TOTAL_PX - 1);
-assign end_reached_v = (counter_y == V_TOTAL_PX - 1);
+assign end_reached_h = (counter_x == H_TOTAL_PX);
+assign end_reached_v = (counter_y == V_TOTAL_PX);
 
 assign active_h = (counter_x > H_BACK_PARCH && counter_x <= (H_BACK_PARCH + H_ACTIVE_AREA));
 assign active_v = (counter_y > V_BACK_PARCH && counter_y < (V_BACK_PARCH + V_ACTIVE_AREA));
