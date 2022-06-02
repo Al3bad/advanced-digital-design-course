@@ -32,6 +32,7 @@ module project_hdmi (
 //=============================================
 // ==> Wires / registers
 //=============================================
+// wire RST_n = SW[3];
 wire RST_n = KEY[0];
 wire px_invert = SW[0];
 wire CLK_PX;
