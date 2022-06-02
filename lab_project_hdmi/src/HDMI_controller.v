@@ -1,7 +1,7 @@
 module HDMI_controller (
   input             CLK_PX,
   input             RST_n,
-  input             INV,
+  input      [2:0]  MODE,
   input      [23:0] PX,
   input      [23:0] TXT_PX,
   output reg [18:0] PX_ADDR,
@@ -44,8 +44,13 @@ parameter OVERLAY_END_X   = OVERLAY_START_X + 100;
 // Hight of the letter = 10px
 // Margin between words and borders = 2px
 // Two lines = (2 * 10px) + (3 * 2px)
-parameter OVERLAY_START_Y = V_ACTIVE_AREA - 30 - (MARGIN * 5);
-parameter OVERLAY_END_Y   = V_ACTIVE_AREA;
+parameter OVERLAY_START_Y = V_ACTIVE_AREA - 20 - (MARGIN * 4);
+parameter OVERLAY_END_Y   = V_ACTIVE_AREA - MARGIN;
+
+// Modes
+parameter NORMAL  = 2'b00;
+parameter INVERT  = 2'b01;
+parameter FLIPPED = 2'b10;
 
 //=============================================
 // ==> Wires / registers
@@ -60,8 +65,6 @@ reg [9:0] counter_y;
 
 reg [9:0] counter_overlay_x;
 reg [9:0] counter_overlay_y;
-
-reg [13:0] counter_overlay;
 
 wire end_reached_h;
 wire end_reached_v;
@@ -132,10 +135,10 @@ always @(posedge CLK_PX, negedge RST_n) begin
   else begin
     if (active_overlay) begin
       // h counter_overlay
-      counter_overlay_x <= (overlay_end_reached_h)?  0 : counter_overlay_x + 1'b1;
+      counter_overlay_x <= (overlay_end_reached_h)?  10'h00 : counter_overlay_x + 1'b1;
       // v counter_overlay
       if (overlay_end_reached_h)
-        counter_overlay_y <= (overlay_end_reached_v)? 0 : counter_overlay_y + 1'b1;
+        counter_overlay_y <= (overlay_end_reached_v)? 10'h00 : counter_overlay_y + 1'b1;
     end
     else if (overlay_end_reached_v)
         counter_overlay_y <= 0;
@@ -143,7 +146,7 @@ always @(posedge CLK_PX, negedge RST_n) begin
 end
 
 //=============================================
-// ==> Active view
+// ==> PX controller
 //=============================================
 always @(posedge CLK_PX, negedge RST_n) begin
   if (!RST_n) begin
@@ -153,41 +156,44 @@ always @(posedge CLK_PX, negedge RST_n) begin
     BLUE <= 0;
     PX_ADDR <= 0;
     TXT_PX_ADDR <= 0;
-    counter_overlay <= 0;
   end
   else begin
-
     if (active) begin
-      // Draw gradient (black-white)
-      // {RED, GREEN, BLUE} <= {RED + 1'b1, GREEN + 1'b1, BLUE + 1'b1};
+      PX_ADDR <= (MODE == FLIPPED)? PX_ADDR - 1'b1 : PX_ADDR + 1'b1;
+      //=============================================
+      // ==> Overlay
+      //=============================================
       if (active_overlay) begin
-        counter_overlay <= 1'b1;
         // Display pixels
-        {RED, GREEN, BLUE} <= {TXT_PX[7:0], TXT_PX[7:0], TXT_PX[7:0]};
+        if (counter_overlay_y == 0 || counter_overlay_y > 20 + 2)
+          {RED, GREEN, BLUE} <= {8'h00, 8'h00, 8'h00};
+        else
+          {RED, GREEN, BLUE} <= {TXT_PX[7:0], TXT_PX[7:0], TXT_PX[7:0]};
 
-        // Select word for the first line
-        if (counter_overlay_y == 1) TXT_PX_ADDR <= (INV)? 14'd1300 : 14'd 100;
-        // Select word for the second line
-        else if (counter_overlay_y == 12) TXT_PX_ADDR <= 14'd2400;
-        else if (counter_overlay_y == 24) TXT_PX_ADDR <= 14'd4700;
-        // Retrive the pixels of the current word
+        // Start address of the word the first line
+        if (counter_overlay_y == 1) TXT_PX_ADDR <= 14'd0;
+        // Start address of the word the second line
+        else if (counter_overlay_y == 13) TXT_PX_ADDR <= (MODE == INVERT)? 14'd2400 : (MODE == FLIPPED)? 14'd3600 : 14'd1200;
+        // Retrive the remaining pixels of the current word
         else TXT_PX_ADDR <= TXT_PX_ADDR + 1'b1;
-
       end
-      else if (INV)
-        {RED, GREEN, BLUE} <= ~{PX[7:0], PX[7:0], PX[7:0]};
-      else
-        {RED, GREEN, BLUE} <= {PX[7:0], PX[7:0], PX[7:0]};
-      PX_ADDR <= PX_ADDR + 1'b1;
+      //=============================================
+      // ==> Image
+      //=============================================
+      else begin
+        {RED, GREEN, BLUE} <= (MODE == INVERT)?  ~{PX[7:0], PX[7:0], PX[7:0]} : {PX[7:0], PX[7:0], PX[7:0]};
+      end
     end
     else begin
-      // black px when not in active area
+      // Blank (not in active view)
       {RED, GREEN, BLUE} <= {8'h00, 8'h00, 8'h00};
     end
+    //=============================================
+    // ==> Reset addresses
+    //=============================================
     if (end_reached_v) begin
-      PX_ADDR <= 0;
+      PX_ADDR <= (MODE == FLIPPED)? (IMG_X * IMG_Y - 1) : 19'h00;
       TXT_PX_ADDR <= 0;
-      counter_overlay <= 0;
     end
   end
 end

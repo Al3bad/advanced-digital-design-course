@@ -13,7 +13,7 @@ module project_hdmi (
   output  [7:0]       LED,
   // I2C
   inout               I2C_SDA,           // I2C data
-  inout               I2C_SCL,           // I2C clock
+  output              I2C_SCL,           // I2C clock
   // HDMI
   output              HDMI_CLK,       // Video clk
   output              HDMI_DE,        // Data enable signal
@@ -26,15 +26,13 @@ module project_hdmi (
   output              HDMI_MCLK,         // Audio Reference Clock Input
   output              HDMI_SCLK,         // Audio Left/Right Channel SignalInput
   // GPIO
-  inout [3:0] GPIO_1
+  output [3:0] GPIO_1
 );
 
 //=============================================
 // ==> Wires / registers
 //=============================================
-// wire RST_n = SW[3];
 wire RST_n = KEY[0];
-wire px_invert = SW[0];
 wire CLK_PX;
 wire CLK_I2C;
 
@@ -57,6 +55,7 @@ assign HDMI_SCLK = 1'b0;
 assign GPIO_1[0] = CLK_I2C;
 assign GPIO_1[1] = I2C_SCL? 1'b1 : 1'b0;
 assign GPIO_1[2] = I2C_SDA? 1'b1 : 1'b0;
+assign GPIO_1[3] = 1'b0;
 
 assign LED[0] = KEY[0];
 assign LED[7:1] = 0;
@@ -180,7 +179,7 @@ HDMI_controller ig (
   .HSYNC(HDMI_HS),
   .VSYNC(HDMI_VS),
   .HDMI_PX(HDMI_PX),
-  .INV(px_invert)
+  .MODE(SW[1:0])
 );
 
 endmodule
