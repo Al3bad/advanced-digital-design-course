@@ -40,6 +40,8 @@ wire [7:0] RED;
 wire [7:0] GREEN;
 wire [7:0] BLUE;
 
+reg [1:0] mode;
+
 //=============================================
 // ==> Connection
 //=============================================
@@ -58,7 +60,8 @@ assign GPIO_1[2] = I2C_SDA? 1'b1 : 1'b0;
 assign GPIO_1[3] = 1'b0;
 
 assign LED[0] = KEY[0];
-assign LED[7:1] = 0;
+assign LED[7:6] = mode;
+assign LED[5:1] = 0;
 
 //=============================================
 // ==> Clk srcs
@@ -83,6 +86,31 @@ clk_src #(
   .CLK_PX(CLK_PX),
   .CLK_I2C(CLK_I2C)
 );
+
+//=============================================
+// ==> Debouncer
+//=============================================
+
+wire mode_btn;
+
+key_debounce kd(
+  .CLK(CLK_I2C),
+  .RST_n(RST_n),
+  .in(~KEY[1]),
+  .out(mode_btn)
+);
+
+//=============================================
+// ==> Select mode
+//=============================================
+
+always @(posedge mode_btn, negedge RST_n) begin
+  if(!RST_n) mode <= 2'h00;
+  else begin
+    if (mode_btn && mode == 2'h02) mode <= 2'h00;
+    else if (mode_btn) mode <= mode + 1'b1;
+  end
+end
 
 //=============================================
 // ==> Configure HDMI transmitter via I2C
@@ -179,7 +207,7 @@ HDMI_controller ig (
   .HSYNC(HDMI_HS),
   .VSYNC(HDMI_VS),
   .HDMI_PX(HDMI_PX),
-  .MODE(SW[1:0])
+  .MODE(mode)
 );
 
 endmodule

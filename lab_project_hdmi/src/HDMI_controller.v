@@ -165,7 +165,7 @@ always @(posedge CLK_PX, negedge RST_n) begin
       //=============================================
       if (active_overlay) begin
         // Display pixels
-        if (counter_overlay_y == 0 || counter_overlay_y > 20 + 2)
+        if (counter_overlay_y == 0 || counter_overlay_y > 20 + 3)
           {RED, GREEN, BLUE} <= {8'h00, 8'h00, 8'h00};
         else
           {RED, GREEN, BLUE} <= {TXT_PX[7:0], TXT_PX[7:0], TXT_PX[7:0]};
