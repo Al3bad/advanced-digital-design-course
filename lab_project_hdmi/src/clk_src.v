@@ -14,12 +14,12 @@ module clk_src (
 // ==> Parameters
 //=============================================
 // PX counter config
-parameter CTR_WIDTH_PX    = 1'd1;       // Counter width
-parameter CTR_PRELOAD_PX  = 1'd0;       // Preload value
+parameter CTR_WIDTH_PX    = 2'd2;       // Counter width
+parameter CTR_PRELOAD_PX  = 2'd2;       // Preload value
 
 // I2C counter config
-parameter CTR_WIDTH_I2C   = 4'd9;      // Counter width
-parameter CTR_PRELOAD_I2C = 9'd12;     // Preload value
+parameter CTR_WIDTH_I2C   = 3'd7;      // Counter width
+parameter CTR_PRELOAD_I2C = 7'd28;     // Preload value
 
 //=============================================
 // ==> Counters

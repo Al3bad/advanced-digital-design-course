@@ -76,7 +76,7 @@ clk_src #(
   // I2C counter config
   // For 250 kHz clock:
   //    num of counts  = (1/50MHz) * x = (1/250kHz) / 2 ==> x = 100 counts
-  //    counter width  = 2^x = 100 ==> x = cail(6.64) = 7-bits
+  //    counter width  = 2^x = 100 ==> x = ceil(6.64) = 7-bits
   //    preload value  = 2^7 - 100 = 28
   .CTR_WIDTH_I2C(3'd7),
   .CTR_PRELOAD_I2C(7'd28)
@@ -165,8 +165,6 @@ I2C_controller #(
 // ==> IMG ROM
 //=============================================
 
-// Notes:
-//    - Memory size should be limited to (2^17) × 3 = 393216 becouse of hardware limitation
 wire [18:0] PX_ADDR;
 wire [23:0] PX;
 
@@ -180,8 +178,6 @@ IMG_MEM_BW rom(
 // ==> TXT ROM
 //=============================================
 
-// Notes:
-//    - Memory size should be limited to (2^17) × 3 = 393216 becouse of hardware limitation
 wire [13:0] TXT_PX_ADDR;
 wire [23:0] TXT_PX;
 
