@@ -193,7 +193,8 @@ TXT_MEM rom_txt(
 
 HDMI_controller ig (
   .CLK_PX(CLK_PX),
-  .RST_n(RST_n || ready),
+  .RST_n(RST_n),
+  .ready(ready),
   .PX(PX),
   .PX_ADDR(PX_ADDR),
   .TXT_PX(TXT_PX),

@@ -22,7 +22,6 @@ proc runSim {} {
   #=============================================
   # ==> Init
   #=============================================
-  # generate the system clock (50MHz)
   force -deposit CLK_I2C 1 0, 0 {50us} -repeat 100us
   force -freeze  RST_n           1'b1
 
@@ -37,21 +36,28 @@ proc runSim {} {
   # ==> Start simulation
   #=============================================
 
+  force -freeze CONFIG 16'h1520
+  run 3.79ms
+
+  # Address ACK
+  force -freeze I2C_SDA 1'b0
+  run 0.11ms
+  noforce I2C_SDA
+
+  run 6.7ms
 
 
-  puts "Configuration num = 1"
-  run 200us
-  sendConfig
- 
-  for {set x 0} {$x<13} {incr x} {
-    puts "Configuration num = [expr $x + 2]"
-    run 300us
-    sendConfig
-  }
-
-
-
-  run 1ms
+ #  puts "Configuration num = 1"
+ #  run 200us
+ #  sendConfig
+ # 
+ #  for {set x 0} {$x<13} {incr x} {
+ #    puts "Configuration num = [expr $x + 2]"
+ #    run 300us
+ #    sendConfig
+ #  }
+ #
+ #  run 1ms
 
   wave zoom full
 }

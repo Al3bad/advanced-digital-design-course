@@ -1,6 +1,7 @@
 module HDMI_controller (
   input             CLK_PX,
   input             RST_n,
+  input             ready,
   input      [2:0]  MODE,
   input      [23:0] PX,
   input      [23:0] TXT_PX,
@@ -104,8 +105,8 @@ assign HDMI_PX          = {RED, GREEN, BLUE};
 // ==> Horizontal & vertical counters
 //=============================================
 
-always @(posedge CLK_PX, negedge RST_n) begin
-  if (!RST_n) begin
+always @(posedge CLK_PX, negedge RST_n, negedge ready) begin
+  if (!RST_n || !ready) begin
     // reset
     counter_x <= 0;
     counter_y <= 0;
@@ -126,8 +127,8 @@ end
 // ==> Horizontal & vertical overlay counters
 //=============================================
 
-always @(posedge CLK_PX, negedge RST_n) begin
-  if (!RST_n) begin
+always @(posedge CLK_PX, negedge RST_n, negedge ready) begin
+  if (!RST_n || !ready) begin
     // reset
     counter_overlay_x <= 0;
     counter_overlay_y <= 0;
@@ -148,8 +149,8 @@ end
 //=============================================
 // ==> PX controller
 //=============================================
-always @(posedge CLK_PX, negedge RST_n) begin
-  if (!RST_n) begin
+always @(posedge CLK_PX, negedge RST_n, negedge ready) begin
+  if (!RST_n || !ready) begin
     // reset
     RED <= 0;
     GREEN <= 0;

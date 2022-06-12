@@ -151,7 +151,8 @@ always @(posedge CLK_I2C, negedge RST_n) begin
           SCL <= 1'b1;
           config_addr <= 0;
           current_bit <= 0;
-          I2C_STATE = START;
+          config_addr <= 32'hFFFFFFFF;
+          I2C_STATE = STOP_0;
         end
       end
       //=============================================
